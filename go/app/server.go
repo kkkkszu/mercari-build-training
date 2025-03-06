@@ -40,10 +40,22 @@ func (s Server) Run() int {
 	h := &Handlers{imgDirPath: s.ImageDirPath, itemRepo: itemRepo}
 
 	// set up routes
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /", h.GetItems)
-	mux.HandleFunc("POST /items", h.AddItem)
-	mux.HandleFunc("GET /images/{filename}", h.GetImage)
+	 mux := http.NewServeMux()
+         // POST /items - 商品追加
+         // /items エンドポイント
+mux.HandleFunc("/items", func(w http.ResponseWriter, r *http.Request) {
+    switch r.Method {
+    case http.MethodPost:
+        h.AddItem(w, r)  // POST /items - 商品追加
+    case http.MethodGet:
+        h.GetItems(w, r)  // GET /items - 商品一覧取得
+    default:
+        http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+    }
+})
+    //mux.HandleFunc("/items", h.AddItem)  // GET /items
+    //mux.HandleFunc("/items", h.GetItems)   // POST /items
+    mux.HandleFunc("/images/{filename}", h.GetImage) // GET /images/{filename}
 
 	// start the server
 	slog.Info("http server started on", "port", s.Port)
@@ -91,7 +103,7 @@ type AddItemResponse struct {
 func parseAddItemRequest(r *http.Request) (*AddItemRequest, error) {
 	req := &AddItemRequest{
 		Name: r.FormValue("name"),
-		Category: r.FormValue("Category"),//step4-2:Category取得
+		Category: r.FormValue("category"),//step4-2:Category取得
 	}
 
 	// STEP 4-4: add an image field
