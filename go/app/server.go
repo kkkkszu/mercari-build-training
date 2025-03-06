@@ -41,7 +41,7 @@ func (s Server) Run() int {
 
 	// set up routes
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /", h.Hello)
+	mux.HandleFunc("GET /", h.GetItems)
 	mux.HandleFunc("POST /items", h.AddItem)
 	mux.HandleFunc("GET /images/{filename}", h.GetImage)
 
@@ -143,6 +143,29 @@ func (s *Handlers) AddItem(w http.ResponseWriter, r *http.Request) {
 	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+      // 商品リストを取得
+func (s *Handlers) GetItems(w http.ResponseWriter, r *http.Request) {
+
+	items, err := s.itemRepo.GetItems(r.Context())
+	if err != nil {
+		http.Error(w, "failed to fetch items", http.StatusInternalServerError)
+		return
+	}
+
+	// レスポンスとして商品リストをJSONで返す
+	resp := struct {
+		Items []Item `json:"items"`
+	}{
+		Items: items,
+	}
+
+	err = json.NewEncoder(w).Encode(resp)
+	if err != nil {
+		http.Error(w, "failed to encode response", http.StatusInternalServerError)
 		return
 	}
 }
