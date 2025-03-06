@@ -14,7 +14,7 @@ var errImageNotFound = errors.New("image not found")
 type Item struct {
 	ID   int    `db:"id" json:"-"`
 	Name string `db:"name" json:"name"`
-        Category string `db:"Category" json:"Category"`
+        Category string `db:"category" json:"category"`
         Image string `db:"image" json:"image"`
 }
 
@@ -76,25 +76,29 @@ func (i *itemRepository) Insert(ctx context.Context, item *Item) error {
 }
 // GetItems retrieves all items from the repository (from the items.json file)
 func (i *itemRepository) GetItems(ctx context.Context) ([]Item, error) {
+    // ファイルの読み込み
+    data, err := os.ReadFile(i.fileName)
+    if err != nil && !os.IsNotExist(err) {
+        return nil, err
+    }
 
-	data, err := os.ReadFile(i.fileName)
-	if err != nil && !os.IsNotExist(err) {
-		return nil, err
-	}
+    var items struct {
+        Items []Item `json:"items"`
+    }
 
-	var items struct {
-		Items []Item `json:"items"`
-	}
+    if len(data) > 0 {
+        err = json.Unmarshal(data, &items)
+        if err != nil {
+            return nil, err
+        }
+    } else {
+        // ファイルが空でない場合、新規に空の items を返す
+        items.Items = []Item{}
+    }
 
-	if len(data) > 0 {
-		err = json.Unmarshal(data, &items)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return items.Items, nil
+    return items.Items, nil
 }
+
 // StoreImage stores an image and returns an error if any.
 // This package doesn't have a related interface for simplicity.
 func StoreImage(fileName string, image []byte) error {
